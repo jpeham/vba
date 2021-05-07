@@ -1,90 +1,125 @@
 Attribute VB_Name = "Module1"
 Sub update_prices()
+    ' take current table, loop over rows
+    ' switch to other open table, search for article number
+    ' copy price, switch back to first table and paste price
+    ' update "Code" column to log changes
+    ' -1 = could not be found = no change,
+    ' 2 = found and in % range = changed,
+    ' 3 = found but not in % range = no change,
+    ' 4 = found but new price is lower = no change
+    '
+    ' Keyboard shortcut = Strg + d
+    ' from JP 20210507
+    
+    ' for debugging
+    Dim debugBool As Boolean
+    debugBool = False
+    debugBoolS = True ' debug bool for single problems
     
     ' declare iRows for loop over rows
     Dim x As Integer
+    
     ' Set numrows = number of rows of data.
     'NumRows = Range("A2", Range("A2").End(xlDown)).Rows.Count
-    rowStart = 3000
-    ' rowStart = 28
-    NumRows = 4091
-    ' 1224 4091
+    rowStart = 1000 ' where to start looping ' first row = 28
+    NumRows = 4091 ' to where to loop ' last row = 4091
+    ' for debug: 1220 - 1224
+    
     iRow = rowStart
-    rowCode = 20
-    rowVK = 4
-    ' nope rowVKtoCpy = 6
+    rowCode = 16 ' column for log ' P = 16
+    rowVK = 4 ' column to paste price ' D = 4
+    ' nope rowVKtoCpy = 6 ' column to copy price from ' not used because of dynamic offset from active cell from search result
     
     ' declare String searchTerm
     Dim searchTerm As String
-    searchTerm = "asdf"
+    searchTerm = "asdf" ' TODO blind declaration necessary?
     
     ' declare String result for search result
     Dim searchResult As String
-    searchResult = "no"
+    searchResult = "no" ' TODO blind declaration necessary?
+    
+    'declare interval for prozent range
+    Dim minProz As Double
+    Dim maxProz As Double
+    minProz = 0.0278 '2.78
+    maxProz = 0.0436 '4.36
     
     ' ### loop over rows
     ' Establish "For" loop to loop "numrows" number of times.
-    For iRows = rowStart To NumRows
+    For iRows = rowStart To NumRows ' TODO eliminate one of iRows and rowStart?
     
-        ' Dim price As Sting
-        
         ' ### take ArtNr as searchTerm
-        ' MsgBox ("| ArtNr is " + Cells(iRow, 1))
-        ' searchTerm = Str(Cells(iRow, 1))
-        searchTerm = Cells(iRow, 1)
-        ' MsgBox ("searchTerm = " + searchTerm)
+        artNum = Cells(iRow, 1)
+        searchTerm = artNum
+        If debugBool Then MsgBox ("Row " + Str(iRows) + ": " + artNum)
         ' take first 5 digits (but 6 because leading space
         searchTerm = Left(searchTerm, 6)
-        ' MsgBox ("left of searchTerm = >" + searchTerm + "<")
         ' get rid of leading space
         searchTerm = Right(searchTerm, 5)
-        ' MsgBox ("left of searchTerm = >" + searchTerm + "<")
-        ' MsgBox "Type of SearchTerm = " + TypeName(searchTerm)
         
         ' ### switch to other table
         ActiveWindow.ActivateNext
         
         ' ### search for searchTerm
-        ' nope Set asdf0 = Cells.Find(What:="12412.31.001", LookIn:=xlFormulas)
         ' MsgBox (TypeName(searchTerm))
         Set foundCell = Cells.Find(What:=searchTerm, LookIn:=xlFormulas)
         
         ' test if returned object is Range, if Nothing then no search result
-        If foundCell Is Nothing Then
-            ' MsgBox "search result of " + searchTerm + " not found"
+        If foundCell Is Nothing Then ' foundCell is Nothing in case no search result found
             ' ### mark cell as not found
-            ' ### switch back to first table
+            ' switch back to first table
             ActiveWindow.ActivateNext
-            ' ### mark cell as done
-            Cells(iRow, rowCode) = "6"
+            ' ### mark cell as done, log with -1
+            Cells(iRow, rowCode) = "-1"
             
-        Else
-            ' MsgBox "searchResult = " + foundCell
-            ' MsgBox ("Type of searchResult = " + TypeName(foundCell))
-            ' MsgBox (foundCell)
+        Else ' = search result found
             foundCell.Activate
             
             ' ### offset to price column
             ActiveCell.Offset(0, 3).Select
             ' ### copy price
-            ' MsgBox (ActiveCell)
-            Price = ActiveCell.Value
-            ' MsgBox (price)
+            newPrice = ActiveCell.Value
             
             ' ### switch back to first table
             ActiveWindow.ActivateNext
             
-            ' ### paste price
-            Cells(iRow, rowVK) = Price
+            ' get old price for comparison
+            oldPrice = Cells(iRow, rowVK)
             
             ' ### check if new price is higher than old price
-            oldPrice = Cells(iRow, 5)
-            If Price < oldPrice Then
-                ' mark with "billiger"
-                Cells(iRow, rowCode) = "B"
-            Else
-                ' ### mark cell as done with 2
-                Cells(iRow, rowCode) = "2"
+            ' and only update price if higher
+            If newPrice <= oldPrice Then
+                ' mark with "4"
+                Cells(iRow, rowCode) = "4"
+            Else ' new price is higher than old price
+                ' TODO switch case wie viel teurer newPrice ist
+                ' zwischen 2,78 - 4,36 % Preiserhöhung übernehmen
+                ' darunter und darüber eigenen Log Code geben
+                diff = newPrice - oldPrice
+                proz = diff / oldPrice
+                'If debugBoolS Then MsgBox ("diff = " + Str(diff))
+                If debugBool Then MsgBox ("proz = " + Str(proz))
+                
+                ' ### paste price
+                ' prüfen of Erhöhung in gewisser Prozent Spanne ist
+                If minProz < proz And proz <= maxProz Then
+                    'MsgBox (TypeName(minProz) + TypeName(proz) + TypeName(maxProz))
+                    'MsgBox (Str(minProz) + "<" + Str(proz) + "<=" + Str(maxProz))
+                    If debugBool Then MsgBox "in % range"
+                    'Cells(iRow, rowVK) = newPrice ' only update price if new price is higher
+                    Cells(iRow, 17) = newPrice
+                    Cells(iRow, 18) = proz
+                    
+                    ' ### mark cell as done with 2
+                    Cells(iRow, rowCode) = "2"
+                Else
+                    Cells(iRow, 17) = newPrice
+                    Cells(iRow, 18) = proz
+                    ' ### mark cell as done with 3
+                    Cells(iRow, rowCode) = "3"
+                End If
+                
             End If
             
         ' Activate Cell to see Progress
