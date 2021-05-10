@@ -1,4 +1,3 @@
-Attribute VB_Name = "Module1"
 Sub update_prices()
     ' take current table, loop over rows
     ' switch to other open table, search for article number
@@ -12,24 +11,59 @@ Sub update_prices()
     ' Keyboard shortcut = Strg + d
     ' from JP 20210507
     
+    ' ----------------------------------README----------------------------------
+    ' to do before use:
+    
+    ' make sure columns line up:
+    ' reveicing table needs:
+    ' 1st column: article number
+    ' 4th column: price
+    columnVK = 4 ' column to paste price ' D = 4
+    
+    columnChanged = 14 ' column N ' to log if changed for 2021
+    
+    ' if wanted, id for sorting, log for debug
+    ' add column O = 15 for id, and iterate to give id
+    ' add column P = 16 for logs
+    columnLog = 16 ' column for log ' P = 16
+    ' debug codes:
+    ' -1 = Artikelnummer in Suche nicht gefunden
+    '  2 = ArtNr gefunden und aktualisiert, weil nicht billiger und in %-Rahmen
+    '  3 = ArtNr gefunden aber außerhalb von %-Rahmen (2,78% - 4,36%), also nicht aktualisiert
+    '  4 = ArtNr gefunden aber billiger als aktueller Preis, also nicht aktualisiert
+    '
+    Dim debugBoolColumns As Boolean
+    debugBoolColumns = False
+    ' if debugBoolColumns is true then:
+    ' add column Q = 17 for zw = zwischenspeicher,
+    ' used here for newPrice before overwriting oldPrice
+    columnZW = 17
+    ' add column R = 18 for percent calculations
+    columnProz = 18
+    '
+    ' make sure only 2 tables are open:
+    ' and activate receiving table
+    '
+    ' Set numrows = number of rows of data.
+    'NumRows = Range("A2", Range("A2").End(xlDown)).Rows.Count
+    rowStart = 28 ' where to start looping ' first row = 28
+    NumRows = 40 ' to where to loop ' last row = 4091
+    '
+    'declare interval for prozent range
+    Dim minProz As Double
+    Dim maxProz As Double
+    minProz = 0.0278 '2.78
+    maxProz = 0.0436 '4.36
+    
+    ' ---------------------------------------------------------------------------
+    
     ' for debugging
     Dim debugBool As Boolean
     debugBool = False
-    debugBoolS = True ' debug bool for single problems
+    debugBoolS = False ' debug bool for single problems
     
     ' declare iRows for loop over rows
-    Dim x As Integer
-    
-    ' Set numrows = number of rows of data.
-    'NumRows = Range("A2", Range("A2").End(xlDown)).Rows.Count
-    rowStart = 1000 ' where to start looping ' first row = 28
-    NumRows = 4091 ' to where to loop ' last row = 4091
-    ' for debug: 1220 - 1224
-    
-    iRow = rowStart
-    rowCode = 16 ' column for log ' P = 16
-    rowVK = 4 ' column to paste price ' D = 4
-    ' nope rowVKtoCpy = 6 ' column to copy price from ' not used because of dynamic offset from active cell from search result
+    Dim x As Integer 'TODO still in use?
     
     ' declare String searchTerm
     Dim searchTerm As String
@@ -39,12 +73,7 @@ Sub update_prices()
     Dim searchResult As String
     searchResult = "no" ' TODO blind declaration necessary?
     
-    'declare interval for prozent range
-    Dim minProz As Double
-    Dim maxProz As Double
-    minProz = 0.0278 '2.78
-    maxProz = 0.0436 '4.36
-    
+    iRow = rowStart
     ' ### loop over rows
     ' Establish "For" loop to loop "numrows" number of times.
     For iRows = rowStart To NumRows ' TODO eliminate one of iRows and rowStart?
@@ -71,7 +100,7 @@ Sub update_prices()
             ' switch back to first table
             ActiveWindow.ActivateNext
             ' ### mark cell as done, log with -1
-            Cells(iRow, rowCode) = "-1"
+            If debugBoolColumns Then Cells(iRow, columnLog) = "-1"
             
         Else ' = search result found
             foundCell.Activate
@@ -85,13 +114,13 @@ Sub update_prices()
             ActiveWindow.ActivateNext
             
             ' get old price for comparison
-            oldPrice = Cells(iRow, rowVK)
+            oldPrice = Cells(iRow, columnVK)
             
             ' ### check if new price is higher than old price
             ' and only update price if higher
             If newPrice <= oldPrice Then
                 ' mark with "4"
-                Cells(iRow, rowCode) = "4"
+                If debugBoolColumns Then Cells(iRow, columnLog) = "4"
             Else ' new price is higher than old price
                 ' TODO switch case wie viel teurer newPrice ist
                 ' zwischen 2,78 - 4,36 % Preiserhöhung übernehmen
@@ -107,23 +136,27 @@ Sub update_prices()
                     'MsgBox (TypeName(minProz) + TypeName(proz) + TypeName(maxProz))
                     'MsgBox (Str(minProz) + "<" + Str(proz) + "<=" + Str(maxProz))
                     If debugBool Then MsgBox "in % range"
-                    'Cells(iRow, rowVK) = newPrice ' only update price if new price is higher
-                    Cells(iRow, 17) = newPrice
-                    Cells(iRow, 18) = proz
+                    If Not debugBoolColumns Then Cells(iRow, columnVK) = newPrice ' only update price if new price is higher
+                    If debugBoolColumns Then Cells(iRow, columnZW) = newPrice
+                    If debugBoolColumns Then Cells(iRow, columnProz) = proz
+                    
+                    ' mark that row has changed
+                    Cells(iRow, columnChanged) = "1"
                     
                     ' ### mark cell as done with 2
-                    Cells(iRow, rowCode) = "2"
+                    If debugBoolColumns Then Cells(iRow, columnLog) = "2"
                 Else
-                    Cells(iRow, 17) = newPrice
-                    Cells(iRow, 18) = proz
+                    If debugBoolColumns Then Cells(iRow, columnZW) = newPrice
+                    If debugBoolColumns Then Cells(iRow, columnProz) = proz
                     ' ### mark cell as done with 3
-                    Cells(iRow, rowCode) = "3"
+                    If debugBoolColumns Then Cells(iRow, columnLog) = "3"
                 End If
                 
             End If
             
         ' Activate Cell to see Progress
-        Cells(iRow, rowCode).Activate
+        Cells(iRow, columnVK).Activate
+        If debugBoolColumns Then Cells(iRow, columnLog).Activate
         
         End If
         
