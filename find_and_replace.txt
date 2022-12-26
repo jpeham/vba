@@ -1,0 +1,47 @@
+Sub find_and_replace()
+    '
+    ' Bankdaten_aktualisieren Makro
+    ' sucht Zelle mit Bankverbindung und ersetzt die alten Daten mit den neuen
+    '
+    ' Tastenkombination: Strg+_ // TODO
+    ' von JP 20221226
+    '
+    ' aktive Zelle merken
+    ' Zelle mit Suchbegriff "xxxxx" suchen und dahingehen
+    ' neue Daten darunter einfügen
+    ' zu alter Zelle zurückgehen
+    
+    ' for debugging
+    Dim debugBool As Boolean
+    debugBool = True
+    
+    ' save active Cell
+    Dim oldCell As Range
+    Set oldCell = ActiveCell
+    
+    ' find Cell in Column B with "xxxxx"
+    Set totalCell = Range("B:B").Find("xxxxx")
+    
+    If debugBool Then ' just for testing
+        ActiveCell.FormulaR1C1 = "asdf"
+        ActiveCell.Offset(1, 0).Range("A1").Select ' go down 1
+    Else ' replace data
+        totalCell.Select
+        ActiveCell.Offset(1, 0).Range("A1").Select ' go down 1
+        ActiveCell.FormulaR1C1 = "aaaaa"
+        ActiveCell.Offset(1, 0).Range("A1").Select ' go down 1
+        ActiveCell.FormulaR1C1 = "bbbbb"
+        ActiveCell.Offset(1, 0).Range("A1").Select ' go down 1
+        ActiveCell.FormulaR1C1 = "ccccc"
+        ActiveCell.Offset(1, 0).Range("A1").Select ' go down 1
+        ActiveCell.FormulaR1C1 = "ddddd"
+        ActiveCell.Offset(1, 0).Range("A1").Select ' go down 1
+        ActiveCell.FormulaR1C1 = "eeeee"
+        ActiveCell.Offset(1, 0).Range("A1").Select ' go down 1
+        ActiveCell.FormulaR1C1 = "fffff"
+    End If
+    
+    ' set old active Cell
+    oldCell.Select
+
+End Sub
